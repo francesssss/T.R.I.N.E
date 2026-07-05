@@ -16,7 +16,7 @@ the point of highest consequence.
 
 This demo visualises that argument in miniature.
 
-**Live demo:** [add your GitHub Pages link here once deployed]
+**Live demo:** https://francesssss.github.io/T.R.I.N.E/
 
 ## What it shows
 
