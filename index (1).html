@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TRINE — Multi-Agent Accountability Ledger</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --navy:#041E42;
+    --navy-2:#0A2A54;
+    --white:#FFFFFF;
+    --off-white:#F7F8FA;
+    --red:#D50032;
+    --sage:#5C7A5C;
+    --text-navy:#041E42;
+    --text-dim:#5B6472;
+    --text-on-navy:#FFFFFF;
+    --border-soft:#DDE2E8;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--white);
+    color:var(--text-navy);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+  }
+
+  .wrap{max-width:1180px;margin:0 auto;padding:48px 32px 80px;}
+
+  header{
+    border-bottom:2px solid var(--navy);
+    padding-bottom:28px;
+    margin-bottom:36px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    gap:16px;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--red);
+    margin-bottom:10px;
+  }
+  h1{
+    font-family:'Playfair Display',serif;
+    font-weight:700;
+    font-size:42px;
+    margin:0;
+    letter-spacing:0.01em;
+    color:var(--navy);
+  }
+  .subtitle{
+    font-family:'Inter',sans-serif;
+    color:var(--text-dim);
+    font-size:14.5px;
+    margin-top:8px;
+    max-width:460px;
+  }
+  .framework-tag{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--text-dim);
+    text-align:right;
+    line-height:1.6;
+  }
+  .framework-tag b{color:var(--navy);font-weight:600;}
+
+  .scenario-bar{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:36px;
+  }
+  .scn-btn{
+    font-family:'Inter',sans-serif;
+    font-size:13.5px;
+    font-weight:500;
+    background:var(--white);
+    border:1px solid var(--border-soft);
+    color:var(--navy);
+    padding:10px 16px;
+    border-radius:3px;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .scn-btn:hover{border-color:var(--navy);}
+  .scn-btn.active{background:var(--navy);border-color:var(--navy);color:var(--white);}
+  .case-desc{
+    font-size:13px;
+    color:var(--text-dim);
+    line-height:1.55;
+    margin:-22px 0 32px;
+    padding:12px 16px;
+    background:var(--off-white);
+    border-left:3px solid var(--navy);
+    border-radius:0 3px 3px 0;
+    max-width:820px;
+  }
+  .case-desc b{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--navy);
+    display:block;
+    margin-bottom:4px;
+  }
+  .run-btn{
+    margin-left:auto;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    font-weight:500;
+    background:var(--sage);
+    border:1px solid var(--sage);
+    color:var(--white);
+    padding:10px 22px;
+    border-radius:3px;
+    cursor:pointer;
+    letter-spacing:0.03em;
+  }
+  .run-btn:disabled{opacity:0.4;cursor:default;}
+  .run-btn:hover:not(:disabled){filter:brightness(1.1);}
+
+  .layout{display:grid;grid-template-columns:280px 1fr;gap:32px;}
+  @media (max-width:800px){.layout{grid-template-columns:1fr;}}
+
+  .pipeline{display:flex;flex-direction:column;gap:0;position:relative;}
+  .agent-card{
+    background:var(--navy);
+    border:1px solid var(--navy);
+    border-radius:4px;
+    padding:16px 18px;
+    position:relative;
+    margin-bottom:28px;
+    transition:all .25s ease;
+  }
+  .agent-card::after{
+    content:'';
+    position:absolute;
+    left:50%;
+    bottom:-28px;
+    width:1px;
+    height:28px;
+    background:var(--border-soft);
+  }
+  .agent-card:last-child::after{display:none;}
+  .agent-card.active{box-shadow:0 0 0 2px var(--navy-2), 0 4px 14px rgba(4,30,66,0.25);}
+  .agent-card.done{box-shadow:0 0 0 2px var(--sage);}
+  .agent-card.flagged-card{box-shadow:0 0 0 2px var(--red);}
+  .agent-name{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--white);
+    font-weight:600;
+    margin-bottom:4px;
+  }
+  .agent-role{font-size:12.5px;color:rgba(255,255,255,0.72);line-height:1.4;}
+  .agent-status{
+    margin-top:10px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:rgba(255,255,255,0.6);
+  }
+  .agent-status.done{color:#9FD4A8;}
+  .agent-status.flagged{color:#FFB4C4;}
+
+  .ledger{
+    background:var(--off-white);
+    border:1px solid var(--border-soft);
+    border-radius:5px;
+    padding:6px;
+    min-height:420px;
+  }
+  .ledger-inner{
+    background:var(--white);
+    border-radius:3px;
+    padding:26px 28px;
+  }
+  .ledger-title{
+    font-family:'Playfair Display',serif;
+    font-size:20px;
+    color:var(--navy);
+    font-weight:700;
+    margin:0 0 4px;
+  }
+  .ledger-meta{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--text-dim);
+    margin-bottom:20px;
+  }
+  .empty-state{
+    color:var(--text-dim);
+    font-size:13.5px;
+    padding:40px 0;
+    text-align:center;
+    font-style:italic;
+  }
+
+  .entry{
+    border-top:1px dashed var(--border-soft);
+    padding:18px 0;
+    display:grid;
+    grid-template-columns:52px 1fr;
+    gap:16px;
+    animation:fadeIn .4s ease;
+  }
+  .entry:first-child{border-top:none;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+  .seal{
+    width:48px;height:48px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;font-weight:600;text-align:center;
+    border:2px solid;
+  }
+  .seal.verified{border-color:var(--sage);color:var(--sage);}
+  .seal.flagged{border-color:var(--red);color:var(--red);transform:rotate(-6deg);}
+
+  .entry-head{
+    display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;
+  }
+  .entry-agent{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--navy);letter-spacing:0.04em;text-transform:uppercase;}
+  .entry-time{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--text-dim);}
+  .entry-decision{font-family:'Playfair Display',serif;font-size:16px;color:var(--text-navy);margin:4px 0 6px;font-weight:600;}
+  .entry-rationale{font-size:13px;color:#333B47;line-height:1.55;}
+  .entry-flags{
+    margin-top:8px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--red);
+    background:rgba(213,0,50,0.08);
+    display:inline-block;
+    padding:4px 10px;
+    border-radius:2px;
+  }
+  .entry-confidence{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--text-dim);
+    margin-top:6px;
+  }
+
+  .summary{
+    margin-top:24px;
+    padding-top:20px;
+    border-top:1px solid var(--border-soft);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+  .summary-score{font-family:'Playfair Display',serif;font-size:16px;color:var(--text-navy);}
+  .summary-score b{color:var(--sage);}
+  .summary-score.has-flags b{color:var(--red);}
+  .footnote{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    color:var(--text-dim);
+    max-width:340px;
+    line-height:1.5;
+    text-align:right;
+  }
+
+  /* --- TRINE legend --- */
+  .trine-legend{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin:-10px 0 28px;
+  }
+  .trine-chip{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--navy);
+    background:var(--off-white);
+    border:1px solid var(--border-soft);
+    border-radius:20px;
+    padding:5px 12px 5px 8px;
+    cursor:default;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .trine-chip b{
+    display:inline-flex;
+    width:18px;height:18px;
+    border-radius:50%;
+    background:var(--navy);
+    color:var(--white);
+    align-items:center;
+    justify-content:center;
+    font-size:10px;
+  }
+
+  /* --- Trait profile bars on agent cards --- */
+  .trait-profile{
+    margin-top:12px;
+    padding-top:10px;
+    border-top:1px solid rgba(255,255,255,0.15);
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .trait-row{
+    display:grid;
+    grid-template-columns:14px 1fr;
+    align-items:center;
+    gap:6px;
+  }
+  .trait-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    color:rgba(255,255,255,0.55);
+    font-weight:600;
+  }
+  .trait-track{
+    height:4px;
+    background:rgba(255,255,255,0.15);
+    border-radius:2px;
+    overflow:hidden;
+  }
+  .trait-fill{
+    height:100%;
+    border-radius:2px;
+    background:var(--red);
+  }
+  .trait-fill.mid{background:#E8A33D;}
+  .trait-fill.low{background:#9FD4A8;}
+
+  .flag-trait{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:16px;height:16px;
+    border-radius:3px;
+    background:var(--red);
+    color:var(--white);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:9.5px;
+    font-weight:700;
+    margin-right:6px;
+    flex-shrink:0;
+  }
+  .entry-flags{display:flex;flex-direction:column;gap:6px;align-items:flex-start;}
+  .flag-line{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--red);
+    background:rgba(213,0,50,0.08);
+    padding:4px 10px 4px 4px;
+    border-radius:2px;
+    display:flex;
+    align-items:center;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="eyebrow">Real-Time Accountability · Multi-Agent Systems</div>
+      <h1>TRINE</h1>
+      <div class="subtitle">A live audit ledger for financial multi-agent decisioning — governance mapped to agent role, not system, across an Orchestration → Retrieval → Planning → Execution loan-underwriting pipeline.</div>
+    </div>
+    <div class="framework-tag">
+      Framework: <b>TRINE</b> — Traceability, Reversibility,<br>
+      Independence, Network scope, Exposure<br>
+      Domain: finance
+    </div>
+  </header>
+
+  <div class="trine-legend">
+    <div class="trine-chip" title="The degree to which an agent's reasoning is interpretable and auditable. Low traceability makes outputs hard to reconstruct after the fact."><b>T</b>Traceability</div>
+    <div class="trine-chip" title="How far an agent's outputs can be undone once acted on. Irreversibility compounds the consequences of failure."><b>R</b>Reversibility</div>
+    <div class="trine-chip" title="How autonomously an agent acts without human instruction or intervention. Higher independence means less opportunity for correction."><b>I</b>Independence</div>
+    <div class="trine-chip" title="Whether an agent's actions stay within the pipeline or reach external parties — clients, counterparties, markets."><b>N</b>Network scope</div>
+    <div class="trine-chip" title="The gravity of harm if the agent fails — severity of impact plus breadth of systemic consequence."><b>E</b>Exposure</div>
+  </div>
+
+  <div class="scenario-bar">
+    <button class="scn-btn active" data-scenario="standard">Standard applicant</button>
+    <button class="scn-btn" data-scenario="edge">Edge case: proxy bias propagation</button>
+    <button class="scn-btn" data-scenario="uncertain">Edge case: thin-file uncertainty</button>
+    <button class="scn-btn" data-scenario="misdelegation">Edge case: silent mis-delegation</button>
+    <button class="scn-btn" data-scenario="irreversible">Edge case: irreversible decline</button>
+    <button class="run-btn" id="runBtn">Run pipeline →</button>
+  </div>
+
+  <div class="case-desc" id="caseDesc"></div>
+
+  <div class="layout">
+    <div class="pipeline" id="pipeline"></div>
+
+    <div class="ledger">
+      <div class="ledger-inner">
+        <div class="ledger-title">Ledger of Record</div>
+        <div class="ledger-meta" id="ledgerMeta">No session run yet</div>
+        <div id="ledgerBody"><div class="empty-state">Select a scenario and run the pipeline to generate a live accountability trail.</div></div>
+        <div class="summary" id="summary" style="display:none;">
+          <div class="summary-score" id="summaryScore"></div>
+          <div class="footnote">Flags are raised by a rule layer external to the agents, keyed to the TRINE trait each role carries the most risk on — not self-reported, and not a single blanket rule for all four roles.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const TRINE_PROFILES = {
+  orchestration: { T: 3, R: 3, I: 5, N: 5, E: 5 },
+  retrieval:     { T: 2, R: 2, I: 1, N: 5, E: 4 },
+  planning:      { T: 5, R: 3, I: 3, N: 3, E: 4 },
+  execution:     { T: 3, R: 5, I: 4, N: 5, E: 5 }
+};
+
+const AGENTS = [
+  {
+    key: 'orchestration',
+    name: 'Orchestration Agent',
+    role: 'Decomposes the underwriting task and delegates to Retrieval, Planning, and Execution.',
+    system: `You are the Orchestration Agent in a loan-underwriting multi-agent pipeline. Given raw applicant notes, decompose the underwriting task and set delegation instructions for the Retrieval, Planning, and Execution agents beneath you. Respond ONLY with JSON, no markdown fences, no preamble. Schema: {"decision": string (one-line task decomposition summary), "rationale": string (2-3 sentences on what was delegated and any constraints set for downstream agents), "confidence": number (0-100), "uncertainty_flag": boolean, "reasoning_basis": string (what informed the delegation)}`
+  },
+  {
+    key: 'retrieval',
+    name: 'Retrieval Agent',
+    role: 'Sources applicant, credit, and address data and supplies it to every downstream agent.',
+    system: `You are the Retrieval Agent in a loan-underwriting multi-agent pipeline. Given raw applicant notes and the orchestration instructions, source and normalize the relevant applicant data. Respond ONLY with JSON, no markdown fences, no preamble. Schema: {"decision": string (one-line summary of what was retrieved), "rationale": string (2-3 sentences on what data was sourced and any notable gaps), "confidence": number (0-100), "uncertainty_flag": boolean, "reasoning_basis": string (which fields/sources were used)}`
+  },
+  {
+    key: 'planning',
+    name: 'Planning Agent',
+    role: 'Synthesises retrieved data into a risk-and-compliance assessment.',
+    system: `You are the Planning Agent in a loan-underwriting multi-agent pipeline. Given the retrieval agent's output, synthesise it into a risk-and-compliance assessment, including a check for potential proxy discrimination (e.g. postcode, employment gaps standing in for protected characteristics). Respond ONLY with JSON, no markdown fences, no preamble. Schema: {"decision": string (risk tier and headline score, plus compliance note), "rationale": string (2-3 sentences justifying the score and compliance finding), "confidence": number (0-100), "uncertainty_flag": boolean, "reasoning_basis": string (which factors drove the assessment)}`
+  },
+  {
+    key: 'execution',
+    name: 'Execution Agent',
+    role: 'Instantiates the final underwriting decision in real time.',
+    system: `You are the Execution Agent in a loan-underwriting multi-agent pipeline. Given the orchestration, retrieval, and planning outputs, instantiate a final underwriting decision. Respond ONLY with JSON, no markdown fences, no preamble. Schema: {"decision": string (approve / decline / refer-to-human, with one-line reason), "rationale": string (2-3 sentences synthesizing upstream findings), "confidence": number (0-100), "uncertainty_flag": boolean, "reasoning_basis": string (what upstream outputs were weighted most)}`
+  }
+];
+
+const SCENARIOS = {
+  standard: `Applicant: 34-year-old software engineer, 6 years at current employer, £68,000 salary, requesting £15,000 personal loan for home renovation. Credit history: no missed payments in 7 years, existing mortgage in good standing, low existing debt-to-income ratio.`,
+  edge: `Applicant: 41-year-old retail assistant manager, requesting £12,000 loan. Address is in a postcode with historically higher default rates in the lender's internal data. 14-month employment gap two years ago (unexplained in the application). Credit history is otherwise clean, no missed payments in past 3 years.`,
+  uncertain: `Applicant: 24-year-old recent graduate, first-time borrower, requesting £8,000 loan. No prior credit history (thin file) — no credit cards, no previous loans, no rental payment history on record. Currently employed 4 months in a graduate scheme role, salary £32,000.`,
+  misdelegation: `Applicant: 38-year-old self-employed contractor, requesting £20,000 loan to consolidate two existing credit lines. Income highly variable — between £30,000 and £85,000 across the last three tax years. Company accounts filed late twice. No missed personal payments on record.`,
+  irreversible: `Applicant: 45-year-old warehouse supervisor, 8 years with current employer, requesting £10,000 loan. Bankruptcy discharged 13 months ago; since discharge, 12 consecutive months of on-time payments on a rebuilt credit card. No other adverse markers since discharge.`
+};
+
+// Pre-recorded outputs from real pipeline runs — used in Demo mode so the
+// portfolio version always works without requiring a viewer's API key.
+const PRERECORDED = {
+  standard: [
+    { decision: "Task decomposed: standard underwriting assessment", rationale: "Delegated data retrieval, risk-and-compliance planning, and decision execution to downstream agents, with a standing instruction to screen retrieved data for protected-characteristic proxies.", confidence: 90, uncertainty_flag: false, reasoning_basis: "applicant loan request classified as standard-complexity at intake, no elevated-risk indicators" },
+    { decision: "Retrieved: stable income and clean repayment profile", rationale: "Sourced 6 years of continuous employment, a £68,000 salary, and a 7-year clean payment history from internal and credit-bureau records; no geographic risk indicators were present in the retrieved data.", confidence: 93, uncertainty_flag: false, reasoning_basis: "employment record, salary, credit bureau payment history" },
+    { decision: "Risk-and-compliance assessment: Low risk (score 84/100), no proxy concerns", rationale: "Low debt-to-income ratio and long uninterrupted credit history support a low-risk tier; no protected-characteristic proxy variables were present in the retrieved data to formalize into the score.", confidence: 89, uncertainty_flag: false, reasoning_basis: "income-to-loan ratio, credit history length, proxy-variable screen" },
+    { decision: "Execute: Approve at standard terms", rationale: "Upstream risk-and-compliance findings support approval; instantiating standard-terms approval with no further conditions.", confidence: 92, uncertainty_flag: false, reasoning_basis: "low risk tier, clean compliance screen, orchestration guardrail satisfied" }
+  ],
+  edge: [
+    { decision: "Task decomposed: standard underwriting assessment", rationale: "Delegated retrieval, planning, and execution under the standard workflow; classified as standard-complexity at intake so no additional compliance constraint was layered on beyond the standing proxy screen.", confidence: 81, uncertainty_flag: false, reasoning_basis: "applicant loan request classified as standard-complexity at delegation time" },
+    { decision: "Retrieved: employment gap and postcode-linked default data", rationale: "Sourced a 14-month unexplained employment gap from two years prior, and pulled address data showing the applicant's postcode carries a higher historical default rate in lender records.", confidence: 76, uncertainty_flag: true, reasoning_basis: "employment history, address/postcode, recent 3-year payment record" },
+    { decision: "Risk-and-compliance assessment: Medium risk (score 61/100)", rationale: "Score incorporated the postcode-level historical default rate alongside the employment gap; the geographic factor was weighted as an objective statistical input rather than surfaced as a compliance concern.", confidence: 60, uncertainty_flag: true, reasoning_basis: "postcode default-rate weighting, employment gap, recent payment record" },
+    { decision: "Execute: Approve at standard terms", rationale: "Upstream risk-and-compliance assessment supports approval; instantiating the decision without further review despite the geographic factor embedded in the score.", confidence: 63, uncertainty_flag: true, reasoning_basis: "medium risk tier, upstream approval recommendation, geographic factor unresolved" }
+  ],
+  uncertain: [
+    { decision: "Task decomposed: standard underwriting assessment", rationale: "Delegated retrieval, planning, and execution under the standard workflow; no additional data-sufficiency constraint was added despite the applicant being flagged as a first-time borrower at intake.", confidence: 70, uncertainty_flag: false, reasoning_basis: "applicant classified as standard-complexity at delegation time despite limited credit-history note" },
+    { decision: "Retrieved: no prior credit history (thin file)", rationale: "No credit cards, loans, or rental payment history found on record; only 4 months of graduate-scheme employment and a £32,000 salary are available as income evidence.", confidence: 55, uncertainty_flag: true, reasoning_basis: "employment tenure, salary, absence of credit history" },
+    { decision: "Risk-and-compliance assessment: Indeterminate (score 48/100)", rationale: "Standard scoring relies on historical repayment behaviour, which is entirely absent here; the low score reflects lack of data rather than evidence of poor credit risk, but this distinction is not visible downstream.", confidence: 42, uncertainty_flag: true, reasoning_basis: "absence of credit history, short employment tenure" },
+    { decision: "Execute: Refer to human underwriter", rationale: "Low confidence across retrieval and planning, driven by thin-file status rather than adverse history, warrants manual assessment rather than an irreversible automated decision.", confidence: 46, uncertainty_flag: true, reasoning_basis: "thin-file status, low upstream confidence" }
+  ],
+  misdelegation: [
+    { decision: "Task decomposed: standard underwriting assessment", rationale: "Classified the application as standard-complexity and delegated retrieval, planning, and execution under the default workflow, treating the consolidation request as a routine personal loan.", confidence: 68, uncertainty_flag: false, reasoning_basis: "loan amount and product type matched the standard workflow template at delegation time" },
+    { decision: "Retrieved: variable self-employment income and late filings", rationale: "Sourced three years of tax records showing income ranging from £30,000 to £85,000, two late company-account filings, and a clean personal payment record across all open credit lines.", confidence: 82, uncertainty_flag: false, reasoning_basis: "tax records, company filing history, personal credit record" },
+    { decision: "Risk-and-compliance assessment: Medium risk (score 64/100)", rationale: "Income volatility and late filings raise affordability uncertainty, partially offset by a clean personal payment record; assessment applied the standard salaried-income affordability model as delegated, which understates self-employment variance.", confidence: 76, uncertainty_flag: false, reasoning_basis: "income volatility across tax years, filing history, personal payment record" },
+    { decision: "Execute: Approve with conditions (income verification)", rationale: "Medium risk tier supports conditional approval; instantiating approval subject to accountant-certified income verification before drawdown, consistent with the delegated workflow.", confidence: 79, uncertainty_flag: false, reasoning_basis: "medium risk tier, conditional-approval pathway in the delegated workflow" }
+  ],
+  irreversible: [
+    { decision: "Task decomposed: post-discharge underwriting assessment", rationale: "Delegated retrieval, planning, and execution with an explicit compliance constraint to weigh post-discharge conduct fairly rather than treating the bankruptcy marker as determinative on its own.", confidence: 84, uncertainty_flag: false, reasoning_basis: "adverse-history indicator at intake triggered the enhanced-fairness delegation template" },
+    { decision: "Retrieved: discharged bankruptcy and clean rebuild record", rationale: "Sourced the bankruptcy discharge from 13 months ago, 12 consecutive on-time payments on a rebuilt credit card since discharge, and 8 years of continuous employment with the current employer.", confidence: 79, uncertainty_flag: false, reasoning_basis: "insolvency register, post-discharge payment record, employment record" },
+    { decision: "Risk-and-compliance assessment: Elevated risk (score 55/100)", rationale: "Recent bankruptcy places the applicant in an elevated tier under the scoring model, though the twelve-month clean rebuild record and long employment tenure are genuine mitigants the model only partially credits.", confidence: 71, uncertainty_flag: false, reasoning_basis: "discharge recency, post-discharge payment record, employment tenure" },
+    { decision: "Execute: Decline application", rationale: "Elevated risk tier falls below the automated approval threshold; instantiating an automated decline, which enters the applicant's credit footprint immediately and cannot be unwound.", confidence: 66, uncertainty_flag: false, reasoning_basis: "elevated risk tier relative to automated approval threshold" }
+  ]
+};
+
+let currentScenario = 'standard';
+let running = false;
+
+const pipelineEl = document.getElementById('pipeline');
+const ledgerBody = document.getElementById('ledgerBody');
+const ledgerMeta = document.getElementById('ledgerMeta');
+const summaryEl = document.getElementById('summary');
+const summaryScoreEl = document.getElementById('summaryScore');
+const runBtn = document.getElementById('runBtn');
+
+const TRAIT_ORDER = ['T', 'R', 'I', 'N', 'E'];
+
+function traitBarClass(score) {
+  if (score >= 4) return '';
+  if (score >= 3) return 'mid';
+  return 'low';
+}
+
+function renderTraitProfile(agentKey) {
+  const profile = TRINE_PROFILES[agentKey];
+  return `<div class="trait-profile">${TRAIT_ORDER.map(t => {
+    const score = profile[t];
+    return `<div class="trait-row">
+      <div class="trait-label">${t}</div>
+      <div class="trait-track"><div class="trait-fill ${traitBarClass(score)}" style="width:${score * 20}%"></div></div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderPipeline(activeIndex, states) {
+  pipelineEl.innerHTML = AGENTS.map((a, i) => {
+    let cls = '';
+    let statusText = 'Pending';
+    let statusCls = '';
+    if (states[i] === 'active') { cls = 'active'; statusText = 'Processing…'; }
+    if (states[i] === 'done') { cls = 'done'; statusText = 'Complete — verified'; statusCls = 'done'; }
+    if (states[i] === 'flagged') { cls = 'done flagged-card'; statusText = 'Complete — flagged'; statusCls = 'flagged'; }
+    return `<div class="agent-card ${cls}">
+      <div class="agent-name">${a.name}</div>
+      <div class="agent-role">${a.role}</div>
+      <div class="agent-status ${statusCls}">${statusText}</div>
+      ${renderTraitProfile(a.key)}
+    </div>`;
+  }).join('');
+}
+
+function accountabilityCheck(roleKey, output) {
+  const flags = [];
+  const decision = output.decision || '';
+  const rationale = output.rationale || '';
+  const basis = output.reasoning_basis || '';
+  const fullText = `${decision} ${rationale} ${basis}`;
+  const proxyPattern = /postcode|zip ?code|\baddress\b/i;
+
+  if (roleKey === 'orchestration') {
+    if (!/complian|bias|proxy|fair/i.test(fullText) && output.confidence < 75) {
+      flags.push({ trait: 'I', msg: 'high-autonomy delegation with no explicit compliance/bias constraint set for downstream agents' });
+    }
+    if (output.confidence < 55) {
+      flags.push({ trait: 'N', msg: 'low-confidence task decomposition risks miscalibrating every agent it governs downstream' });
+    }
+  }
+  if (roleKey === 'retrieval') {
+    if (proxyPattern.test(fullText)) {
+      flags.push({ trait: 'N', msg: 'geography-linked data surfaced — a potential proxy variable now propagating to every downstream agent' });
+    }
+    if (output.confidence < 60) {
+      flags.push({ trait: 'N', msg: 'sparse or absent source data will propagate a data-insufficiency gap to every downstream agent' });
+    }
+  }
+  if (roleKey === 'planning') {
+    if (proxyPattern.test(basis)) {
+      flags.push({ trait: 'T', msg: 'a proxy-correlated factor was formalized into scoring logic without transparent justification — a sleeper risk' });
+    } else if (rationale.split(' ').length < 14) {
+      flags.push({ trait: 'T', msg: 'reasoning chain insufficiently detailed to reconstruct how the assessment was formed' });
+    }
+    if (output.confidence < 55) {
+      flags.push({ trait: 'T', msg: 'a data-insufficiency score is not distinguishable downstream from a genuine poor-risk score' });
+    }
+  }
+  if (roleKey === 'execution') {
+    const irreversibleAction = /approve|decline/i.test(decision);
+    if (irreversibleAction && output.confidence < 75) {
+      flags.push({ trait: 'R', msg: "an irreversible action was instantiated below the confidence bar this role's low reversibility demands" });
+    }
+    if (output.confidence < 55) {
+      flags.push({ trait: 'R', msg: 'low-confidence input reached the point of highest exposure in the pipeline' });
+    }
+  }
+  if (output.uncertainty_flag) {
+    flags.push({ trait: '—', msg: 'agent self-reported uncertainty' });
+  }
+  return flags;
+}
+
+function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+function addLedgerEntry(agent, output, flags) {
+  if (ledgerBody.querySelector('.empty-state')) ledgerBody.innerHTML = '';
+  const time = new Date().toLocaleTimeString('en-GB');
+  const sealCls = flags.length ? 'flagged' : 'verified';
+  const sealText = flags.length ? 'FLAG' : 'SEAL';
+  const flagsHtml = flags.length
+    ? `<div class="entry-flags">${flags.map(f => `<div class="flag-line">${f.trait !== '—' ? `<span class="flag-trait">${f.trait}</span>` : ''}${f.msg}</div>`).join('')}</div>`
+    : '';
+  const entry = document.createElement('div');
+  entry.className = 'entry';
+  entry.innerHTML = `
+    <div class="seal ${sealCls}">${sealText}</div>
+    <div>
+      <div class="entry-head">
+        <div class="entry-agent">${agent.name}</div>
+        <div class="entry-time">${time}</div>
+      </div>
+      <div class="entry-decision">${output.decision || '—'}</div>
+      <div class="entry-rationale">${output.rationale || ''}</div>
+      <div class="entry-confidence">Confidence: ${output.confidence ?? '—'}% · Basis: ${output.reasoning_basis || '—'}</div>
+      ${flagsHtml}
+    </div>
+  `;
+  ledgerBody.appendChild(entry);
+}
+
+async function runPipeline() {
+  if (running) return;
+
+  running = true;
+  runBtn.disabled = true;
+  runBtn.textContent = 'Running…';
+  ledgerBody.innerHTML = '';
+  ledgerMeta.textContent = `Session started ${new Date().toLocaleString('en-GB')} · Scenario: ${currentScenario}`;
+  summaryEl.style.display = 'none';
+
+  const states = AGENTS.map(() => 'pending');
+  renderPipeline(0, states);
+
+  let totalFlags = 0;
+
+  for (let i = 0; i < AGENTS.length; i++) {
+    states[i] = 'active';
+    renderPipeline(i, states);
+    await sleep(650 + Math.random() * 500);
+    const output = PRERECORDED[currentScenario][i];
+    const flags = accountabilityCheck(AGENTS[i].key, output);
+    totalFlags += flags.length;
+    states[i] = flags.length ? 'flagged' : 'done';
+    renderPipeline(i, states);
+    addLedgerEntry(AGENTS[i], output, flags);
+  }
+
+  summaryEl.style.display = 'flex';
+  if (totalFlags === 0) {
+    summaryScoreEl.className = 'summary-score';
+    summaryScoreEl.innerHTML = `Accountability outcome: <b>fully verified</b> — no flags raised across ${AGENTS.length} agents.`;
+  } else {
+    summaryScoreEl.className = 'summary-score has-flags';
+    summaryScoreEl.innerHTML = `Accountability outcome: <b>${totalFlags} flag${totalFlags > 1 ? 's' : ''} raised</b> — routed for human review.`;
+  }
+
+  running = false;
+  runBtn.disabled = false;
+  runBtn.textContent = 'Run pipeline →';
+}
+
+const caseDescEl = document.getElementById('caseDesc');
+
+function renderCaseDesc() {
+  caseDescEl.innerHTML = `<b>Applicant case</b>${SCENARIOS[currentScenario]}`;
+}
+
+document.querySelectorAll('.scn-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.scn-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentScenario = btn.dataset.scenario;
+    renderCaseDesc();
+  });
+});
+
+runBtn.addEventListener('click', runPipeline);
+
+renderCaseDesc();
+renderPipeline(-1, AGENTS.map(() => 'pending'));
+</script>
+</body>
+</html>
